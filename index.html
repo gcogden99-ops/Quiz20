@@ -1,0 +1,1527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz20</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom Styles & Print Logic -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+        body { font-family: 'Inter', sans-serif; }
+
+        /* Custom Toggles and UI tweaks */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #68D391;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #68D391;
+        }
+        
+        .quizzer-card { transition: all 0.2s; }
+        .quizzer-card:hover { transform: translateY(-2px); }
+        .disabled-card { opacity: 0.6; pointer-events: none; filter: grayscale(100%); }
+
+        /* Print Specific Styles - Single Page Optimization */
+        @media print {
+            @page { margin: 0.25in; size: portrait; }
+            
+            body { 
+                background: white; 
+                -webkit-print-color-adjust: exact; 
+                height: auto !important; 
+                overflow: visible !important; 
+                display: block !important;
+                font-size: 11px;
+            }
+
+            #app, #app-container { 
+                height: auto !important; 
+                overflow: visible !important; 
+                display: block !important; 
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            .no-print, button, nav, .controls-panel, header, .note-input-area, .mobile-toggle, .timer-module { display: none !important; }
+            
+            #summary-view { 
+                display: block !important; 
+                height: auto !important; 
+                overflow: visible !important; 
+                padding: 0 !important;
+                background: white !important;
+                margin: 0 !important;
+            }
+
+            /* Compression Styles for Single Page */
+            h1 { font-size: 1.5rem !important; margin-bottom: 0.1rem !important; line-height: 1.2 !important; }
+            #summary-date { font-size: 0.8rem !important; margin-bottom: 0.25rem !important; padding-bottom: 0.25rem !important; }
+            
+            /* Scoreboard Compression */
+            #sum-red-score, #sum-yellow-score { font-size: 2rem !important; line-height: 1 !important; }
+            #sum-red-name, #sum-yellow-name { font-size: 1.2rem !important; }
+            .text-xl { font-size: 1rem !important; }
+            
+            /* Compact Containers */
+            .mb-8 { margin-bottom: 0.5rem !important; }
+            .mb-6 { margin-bottom: 0.25rem !important; }
+            .p-6 { padding: 0.5rem !important; }
+            .p-4 { padding: 0.5rem !important; }
+            .gap-6 { gap: 0.5rem !important; }
+
+            /* Grid to Flex for Awards */
+            .grid-cols-2 { display: flex !important; gap: 1rem !important; }
+            .grid-cols-2 > div { flex: 1; border: 1px solid #ddd; }
+            
+            /* Table Compression */
+            h3 { font-size: 1rem !important; margin-top: 0.5rem !important; margin-bottom: 0.25rem !important; border-bottom-width: 1px !important; }
+            
+            table { 
+                font-size: 10px !important; 
+                width: 100%; 
+                border-collapse: collapse; 
+            }
+            
+            th, td { 
+                padding: 2px 4px !important; 
+                border: 1px solid #ccc; 
+                height: auto !important;
+            }
+            
+            thead th { 
+                background-color: #f3f4f6 !important; 
+                font-weight: bold; 
+                color: black !important; 
+            }
+            
+            .overflow-x-auto { overflow: visible !important; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 h-screen overflow-hidden flex flex-col">
+
+    <!-- APP CONTAINER -->
+    <div id="app" class="flex flex-col h-full w-full">
+
+        <!-- ================= VIEW: SETUP ================= -->
+        <div id="setup-view" class="flex-1 flex items-center justify-center p-4 overflow-y-auto">
+            <div class="bg-white p-4 md:p-8 rounded-xl shadow-2xl w-full max-w-4xl border-t-8 border-blue-600">
+                <h1 class="text-2xl md:text-3xl font-bold text-center mb-6 text-gray-700">
+                    Quiz20 <span class="text-lg md:text-xl font-normal text-gray-500 block mt-1">(SBQ Scorekeeping)</span>
+                </h1>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
+                    <!-- Red Team Setup -->
+                    <div class="bg-red-50 p-4 rounded-lg border border-red-200">
+                        <h2 class="text-xl font-bold text-red-700 mb-4"><i class="fas fa-flag text-red-500 mr-2"></i>Red Team</h2>
+                        <input type="text" id="setup-red-name" value="Red Team" class="w-full p-2 mb-4 border rounded font-semibold text-red-900 placeholder-red-300 focus:outline-none focus:ring-2 focus:ring-red-500">
+                        <div id="red-roster-inputs" class="space-y-2">
+                            <!-- JS Generates Inputs -->
+                        </div>
+                    </div>
+
+                    <!-- Yellow Team Setup -->
+                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                        <h2 class="text-xl font-bold text-yellow-700 mb-4"><i class="fas fa-flag text-yellow-500 mr-2"></i>Yellow Team</h2>
+                        <input type="text" id="setup-yellow-name" value="Yellow Team" class="w-full p-2 mb-4 border rounded font-semibold text-yellow-900 placeholder-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                        <div id="yellow-roster-inputs" class="space-y-2">
+                            <!-- JS Generates Inputs -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex flex-col md:flex-row items-center justify-between bg-blue-50 p-4 rounded-lg gap-4">
+                    <div class="flex flex-col space-y-2 w-full md:w-auto">
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" id="bonus-red" checked class="w-5 h-5 text-red-600 rounded focus:ring-red-500">
+                            <span class="ml-3 text-sm font-medium text-gray-900">Red Team Bonus (+10)</span>
+                        </label>
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" id="bonus-yellow" checked class="w-5 h-5 text-yellow-600 rounded focus:ring-yellow-500">
+                            <span class="ml-3 text-sm font-medium text-gray-900">Yellow Team Bonus (+10)</span>
+                        </label>
+                    </div>
+                    <button onclick="app.startQuiz()" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow transition transform hover:scale-105">
+                        Start Quiz <i class="fas fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+                <p class="text-xs text-gray-500 mt-4 text-center">Select exactly 3 starters per team using the checkboxes.</p>
+            </div>
+        </div>
+
+        <!-- ================= VIEW: GAMEBOARD ================= -->
+        <div id="game-view" class="hidden h-full flex flex-col">
+            
+            <!-- Header Scoreboard -->
+            <header class="bg-white shadow-md z-20 px-2 md:px-4 py-2 flex justify-between items-center border-b border-gray-200 h-14 md:h-16 shrink-0">
+                <div class="flex items-center w-1/3">
+                    <div class="text-2xl md:text-3xl font-bold text-red-600 mr-2 md:mr-3" id="sb-red-score">0</div>
+                    <div class="text-xs md:text-sm leading-tight">
+                        <div class="font-bold text-red-800 uppercase tracking-wide truncate" id="sb-red-name">RED</div>
+                        <div class="text-[10px] md:text-xs text-gray-500" id="sb-red-fouls">Fouls: 0</div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col items-center justify-center w-1/3">
+                    <div class="text-xl md:text-2xl font-black text-gray-800" id="sb-q-num">Q1</div>
+                    <div class="text-[10px] md:text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800" id="sb-q-val">10 PTS</div>
+                </div>
+
+                <div class="flex items-center justify-end w-1/3 text-right">
+                    <div class="text-xs md:text-sm leading-tight mr-2 md:mr-3">
+                        <div class="font-bold text-yellow-700 uppercase tracking-wide truncate" id="sb-yellow-name">YELLOW</div>
+                        <div class="text-[10px] md:text-xs text-gray-500" id="sb-yellow-fouls">Fouls: 0</div>
+                    </div>
+                    <div class="text-2xl md:text-3xl font-bold text-yellow-600" id="sb-yellow-score">0</div>
+                </div>
+            </header>
+
+            <!-- Main Control Area (Grid Layout for Mobile Adaptability) -->
+            <!-- Mobile: 2 Columns (Red/Yellow), Rows: Center Controls (Top), Teams (Bottom) -->
+            <div class="flex-1 overflow-hidden grid grid-cols-2 grid-rows-[auto_1fr] md:grid-cols-3 md:grid-rows-1">
+                
+                <!-- CENTER LOGIC PANEL (Mobile: Top Full Width, Desktop: Center Column) -->
+                <div class="col-span-2 row-start-1 md:col-span-1 md:col-start-2 md:row-start-1 bg-white flex flex-col border-b md:border-b-0 md:border-r border-gray-200 z-10 md:h-full max-h-[50vh] md:max-h-full overflow-y-auto">
+                    
+                    <!-- Question Controls (Always Visible) -->
+                    <div class="p-2 md:p-4 bg-gray-50 border-b border-gray-200">
+                        <div class="flex items-center justify-center gap-2 md:gap-4 mb-2">
+                            <!-- Interrupted Toggle -->
+                            <label for="interrupt-toggle" class="flex items-center cursor-pointer select-none">
+                                <div class="relative">
+                                    <input type="checkbox" id="interrupt-toggle" class="sr-only" onchange="app.toggleInterrupted()">
+                                    <div class="w-10 h-6 md:w-14 md:h-8 bg-gray-300 rounded-full shadow-inner transition-colors duration-200 ease-in-out" id="toggle-bg"></div>
+                                    <div class="dot absolute left-1 top-1 w-4 h-4 md:w-6 md:h-6 bg-white rounded-full shadow transition-transform duration-200 ease-in-out transform" id="toggle-dot"></div>
+                                </div>
+                                <div class="ml-2 font-bold text-gray-700 text-[10px] md:text-xs" id="interrupt-label">INT? NO</div>
+                            </label>
+
+                            <!-- No Response Button -->
+                            <button onclick="app.handleNoResponse()" class="px-2 py-1 md:px-4 md:py-2 bg-gray-200 text-gray-700 font-bold rounded shadow hover:bg-gray-300 text-[10px] md:text-xs uppercase border border-gray-300 z-30 relative" title="No Response (or Reread Miss)">
+                                No Response
+                            </button>
+                        </div>
+
+                        <!-- Pre-Event Note Input -->
+                        <div class="note-input-area mb-2 relative">
+                            <textarea id="pending-note" class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-1 focus:ring-blue-500 focus:outline-none resize-none" rows="1" placeholder="Note..."></textarea>
+                        </div>
+                        
+                        <!-- Reread Indicator -->
+                        <div id="rebound-banner" class="hidden bg-purple-600 text-white text-center py-1 px-2 rounded mb-2 font-bold text-xs animate-pulse shadow-lg">
+                            <i class="fas fa-book-reader mr-2"></i> REREAD
+                        </div>
+
+                        <!-- TIME MODULE -->
+                        <div class="timer-module mt-1 pt-2 border-t border-gray-300">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Timer</span>
+                                <div id="timer-display" class="font-mono text-xl font-bold text-gray-800 tracking-wider">00:00</div>
+                            </div>
+                            <div class="grid grid-cols-5 gap-1">
+                                <button onclick="app.startTimer(5)" class="bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 font-bold py-1 rounded text-[10px] transition">5s</button>
+                                <button onclick="app.startTimer(30)" class="bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 font-bold py-1 rounded text-[10px] transition">30s</button>
+                                <button onclick="app.startTimer(60)" class="bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 font-bold py-1 rounded text-[10px] transition">60s</button>
+                                <button onclick="app.startTimer(600)" class="bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 font-bold py-1 rounded text-[10px] transition">10m</button>
+                                <button onclick="app.stopTimer()" class="bg-red-100 border border-red-200 hover:bg-red-200 text-red-600 font-bold py-1 rounded text-[10px] transition"><i class="fas fa-stop"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- Mobile Toggle for Log/Menu -->
+                        <button onclick="app.toggleMobileMenu()" class="md:hidden w-full text-center text-xs text-blue-500 font-bold mt-2 mobile-toggle border-t border-gray-100 pt-1">
+                            <i class="fas fa-chevron-down" id="mobile-menu-icon"></i> Show Menu & Log
+                        </button>
+                    </div>
+
+                    <!-- Event Log & Global Controls (Hidden on Mobile by default) -->
+                    <div id="center-extended-content" class="hidden md:flex flex-col flex-1 overflow-hidden">
+                        <!-- Event Log -->
+                        <div class="flex-1 overflow-y-auto p-2 md:p-4 bg-white" id="event-log">
+                            <!-- Logs go here -->
+                            <div class="text-center text-gray-400 text-sm mt-10">Quiz started.</div>
+                        </div>
+
+                        <!-- Global Controls -->
+                        <div class="p-2 md:p-4 bg-gray-100 border-t border-gray-200 space-y-2 md:space-y-3">
+                            <div class="grid grid-cols-2 gap-2">
+                                <!-- Contests -->
+                                <div class="bg-white p-2 rounded shadow-sm text-xs">
+                                    <div class="font-bold text-center mb-1">Contests</div>
+                                    <div class="flex justify-between">
+                                        <div class="text-red-600 font-bold cursor-pointer hover:bg-red-50 p-1 rounded" onclick="app.addContest('red')">R: <span id="red-contests">0/0</span></div>
+                                        <div class="text-yellow-600 font-bold cursor-pointer hover:bg-yellow-50 p-1 rounded" onclick="app.addContest('yellow')">Y: <span id="yellow-contests">0/0</span></div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-center">
+                                    <button onclick="app.endQuiz()" class="w-full bg-gray-700 text-white py-2 rounded text-xs md:text-sm hover:bg-gray-800">End / Summary</button>
+                                </div>
+                            </div>
+                            <button onclick="app.resetQuiz()" class="w-full text-red-500 text-xs hover:underline text-center">Reset Quiz</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RED TEAM PANEL (Mobile: Left Column) -->
+                <div class="col-start-1 row-start-2 md:col-start-1 md:row-start-1 bg-red-50 overflow-y-auto p-1 md:p-2 border-r border-red-100 flex flex-col relative h-full">
+                    <!-- Rebound/Reread Overlay -->
+                    <div id="red-rebound-overlay" class="hidden absolute inset-0 bg-gray-900/80 z-20 flex items-center justify-center text-white font-bold text-center p-4 backdrop-blur-sm text-xs md:text-base">
+                        Waiting for Yellow Reread...
+                    </div>
+                    <!-- Team Controls Header -->
+                    <div class="mb-2 grid grid-cols-1 xl:grid-cols-2 gap-1">
+                        <button onclick="app.handleTeamFoul('red')" class="bg-red-100 border border-red-300 text-red-800 text-[10px] md:text-xs font-bold py-1 rounded hover:bg-red-200">
+                            Team Foul
+                        </button>
+                        <button onclick="app.handleTimeout('red')" id="btn-timeout-red" class="bg-white border border-gray-300 text-gray-700 text-[10px] md:text-xs font-bold py-1 rounded hover:bg-gray-50">
+                            Timeout <span id="lbl-timeout-red">(0/2)</span>
+                        </button>
+                    </div>
+
+                    <div id="red-players" class="space-y-2 pb-16">
+                        <!-- Cards injected here -->
+                    </div>
+                    <!-- Footer Controls -->
+                    <div class="mt-auto pt-2 sticky bottom-0 bg-red-50 p-1 border-t border-red-200">
+                        <button onclick="app.openSubModal('red')" class="w-full py-2 bg-white border border-red-300 text-red-700 rounded hover:bg-red-100 text-xs font-semibold shadow-sm">
+                            <i class="fas fa-users-cog mr-1"></i> Subs
+                        </button>
+                         <div class="mt-1 text-[10px] text-center text-red-500" id="red-sub-count">Subs: 0/2</div>
+                    </div>
+                </div>
+
+                <!-- YELLOW TEAM PANEL (Mobile: Right Column) -->
+                <div class="col-start-2 row-start-2 md:col-start-3 md:row-start-1 bg-yellow-50 overflow-y-auto p-1 md:p-2 flex flex-col relative h-full">
+                     <!-- Rebound/Reread Overlay -->
+                     <div id="yellow-rebound-overlay" class="hidden absolute inset-0 bg-gray-900/80 z-20 flex items-center justify-center text-white font-bold text-center p-4 backdrop-blur-sm text-xs md:text-base">
+                        Waiting for Red Reread...
+                    </div>
+                    <!-- Team Controls Header -->
+                    <div class="mb-2 grid grid-cols-1 xl:grid-cols-2 gap-1">
+                        <button onclick="app.handleTeamFoul('yellow')" class="bg-yellow-100 border border-yellow-300 text-yellow-800 text-[10px] md:text-xs font-bold py-1 rounded hover:bg-yellow-200">
+                            Team Foul
+                        </button>
+                        <button onclick="app.handleTimeout('yellow')" id="btn-timeout-yellow" class="bg-white border border-gray-300 text-gray-700 text-[10px] md:text-xs font-bold py-1 rounded hover:bg-gray-50">
+                            Timeout <span id="lbl-timeout-yellow">(0/2)</span>
+                        </button>
+                    </div>
+
+                    <div id="yellow-players" class="space-y-2 pb-16">
+                        <!-- Cards injected here -->
+                    </div>
+                    <!-- Footer Controls -->
+                    <div class="mt-auto pt-2 sticky bottom-0 bg-yellow-50 p-1 border-t border-yellow-200">
+                        <button onclick="app.openSubModal('yellow')" class="w-full py-2 bg-white border border-yellow-300 text-yellow-700 rounded hover:bg-yellow-100 text-xs font-semibold shadow-sm">
+                            <i class="fas fa-users-cog mr-1"></i> Subs
+                        </button>
+                        <div class="mt-1 text-[10px] text-center text-yellow-600" id="yellow-sub-count">Subs: 0/2</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= VIEW: SUMMARY ================= -->
+        <div id="summary-view" class="hidden h-full overflow-y-auto bg-white p-4 md:p-8">
+            <div class="max-w-4xl mx-auto">
+                <div class="flex justify-between items-end mb-6 no-print">
+                    <button onclick="app.returnToGame()" class="text-blue-600 hover:underline"><i class="fas fa-arrow-left"></i> Back to Game</button>
+                    <div class="flex gap-2">
+                         <button onclick="app.resetQuiz()" class="bg-red-600 text-white px-4 py-2 rounded shadow hover:bg-red-700"><i class="fas fa-redo mr-2"></i> Start New Quiz</button>
+                         <button onclick="window.print()" class="bg-gray-800 text-white px-4 py-2 rounded shadow hover:bg-black"><i class="fas fa-print mr-2"></i> Save as PDF</button>
+                    </div>
+                </div>
+
+                <!-- Print Header -->
+                <div class="text-center mb-8 border-b-4 border-gray-800 pb-4">
+                    <h1 class="text-2xl md:text-4xl font-bold uppercase tracking-wider mb-2">Official Score Sheet</h1>
+                    <div class="text-sm text-gray-500" id="summary-date"></div>
+                </div>
+
+                <!-- Final Scoreboard -->
+                <div class="flex justify-between items-center mb-8 bg-gray-50 p-4 md:p-6 rounded-xl border border-gray-200">
+                    <div class="text-center w-1/3">
+                        <h2 class="text-xl md:text-2xl font-bold text-red-700" id="sum-red-name">Red Team</h2>
+                        <div class="text-4xl md:text-6xl font-black text-red-600" id="sum-red-score">0</div>
+                    </div>
+                    <div class="text-center w-1/3 text-gray-400 font-bold text-xl">VS</div>
+                    <div class="text-center w-1/3">
+                        <h2 class="text-xl md:text-2xl font-bold text-yellow-700" id="sum-yellow-name">Yellow Team</h2>
+                        <div class="text-4xl md:text-6xl font-black text-yellow-600" id="sum-yellow-score">0</div>
+                    </div>
+                </div>
+
+                <!-- Individual Awards -->
+                <div class="grid grid-cols-2 gap-4 md:gap-6 mb-8">
+                    <div class="p-4 border rounded bg-yellow-50 border-yellow-200">
+                        <h3 class="text-xs font-bold uppercase text-yellow-800 mb-1">High Scorer</h3>
+                        <div class="text-lg md:text-xl font-bold" id="sum-high-scorer">-</div>
+                    </div>
+                    <div class="p-4 border rounded bg-gray-50 border-gray-200">
+                        <h3 class="text-xs font-bold uppercase text-gray-600 mb-1">2nd High Scorer</h3>
+                        <div class="text-lg md:text-xl font-bold" id="sum-2nd-scorer">-</div>
+                    </div>
+                </div>
+
+                <!-- Detailed Table -->
+                <h3 class="text-lg font-bold mb-4 border-b border-gray-300 pb-2">Question Detail</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs md:text-sm text-left text-gray-600">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                            <tr>
+                                <th class="px-2 md:px-4 py-2">#</th>
+                                <th class="px-2 md:px-4 py-2">Val</th>
+                                <th class="px-2 md:px-4 py-2">Team</th>
+                                <th class="px-2 md:px-4 py-2">Quizzer</th>
+                                <th class="px-2 md:px-4 py-2">Result</th>
+                                <th class="px-2 md:px-4 py-2 text-center">Int?</th>
+                                <th class="px-2 md:px-4 py-2 text-right">Running Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="summary-table-body">
+                            <!-- JS Generated -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MODAL: SUBSTITUTIONS -->
+    <div id="sub-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+            <h3 class="text-xl font-bold mb-4" id="sub-modal-title">Substitutions</h3>
+            <p class="text-sm text-gray-500 mb-4">Select exactly 3 active quizzers.</p>
+            <div id="sub-list" class="space-y-2 mb-6"></div>
+            <div class="flex justify-end gap-2">
+                <button onclick="document.getElementById('sub-modal').classList.add('hidden')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancel</button>
+                <button onclick="app.confirmSubs()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Confirm Subs</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CONTEST -->
+    <div id="contest-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6">
+            <h3 class="text-lg font-bold mb-4">Record Contest Result</h3>
+            <div class="grid grid-cols-1 gap-3">
+                <button onclick="app.recordContest('grant')" class="w-full py-3 bg-green-100 text-green-800 font-bold rounded hover:bg-green-200">GRANTED</button>
+                <button onclick="app.recordContest('deny')" class="w-full py-3 bg-red-100 text-red-800 font-bold rounded hover:bg-red-200">DENIED</button>
+                <button onclick="app.recordContest('withdraw')" class="w-full py-3 bg-gray-100 text-gray-800 font-bold rounded hover:bg-gray-200">WITHDRAWN</button>
+            </div>
+            <button onclick="document.getElementById('contest-modal').classList.add('hidden')" class="mt-4 w-full text-gray-500 text-sm">Cancel</button>
+        </div>
+    </div>
+
+    <!-- MODAL: EDIT EVENT -->
+    <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+            <h3 class="text-xl font-bold mb-4">Edit Event</h3>
+            <input type="hidden" id="edit-event-id">
+            
+            <div class="mb-4">
+                <label class="block text-sm font-bold mb-1">Result / Type</label>
+                <select id="edit-result" class="w-full p-2 border rounded" onchange="app.toggleEditFields()">
+                    <option value="correct">Correct Answer</option>
+                    <option value="error">Error</option>
+                    <option value="foul">Foul</option>
+                    <option value="team_foul">Team Foul (-5)</option>
+                    <option value="timeout">Timeout</option>
+                    <option value="no_response">No Response</option>
+                    <option value="void">VOID (Cleared)</option>
+                </select>
+            </div>
+
+            <div id="edit-player-section">
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-1">Team</label>
+                    <select id="edit-team" class="w-full p-2 border rounded" onchange="app.refreshEditPlayers()">
+                        <option value="red">Red Team</option>
+                        <option value="yellow">Yellow Team</option>
+                    </select>
+                </div>
+
+                <div class="mb-4" id="edit-quizzer-container">
+                    <label class="block text-sm font-bold mb-1">Quizzer</label>
+                    <select id="edit-quizzer" class="w-full p-2 border rounded">
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+
+                <div class="mb-6 flex items-center" id="edit-interrupted-container">
+                    <input type="checkbox" id="edit-interrupted" class="w-5 h-5 text-blue-600">
+                    <label for="edit-interrupted" class="ml-2">Interrupted?</label>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-bold mb-1">Note (Optional)</label>
+                <textarea id="edit-note" class="w-full p-2 border rounded text-sm" rows="2" placeholder="Add a note..."></textarea>
+            </div>
+
+            <div class="flex justify-between">
+                <button onclick="app.deleteEventFromModal()" class="text-red-500 hover:underline text-sm" title="Clear this event to blank (preserve numbering)"><i class="fas fa-trash-alt"></i> Delete Event</button>
+                <div class="flex gap-2">
+                    <button onclick="document.getElementById('edit-modal').classList.add('hidden')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancel</button>
+                    <button onclick="app.saveEventChange()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        /**
+         * UPCI SENIOR BIBLE QUIZZING SCORING ENGINE
+         */
+
+        const CONSTANTS = {
+            QUIZ_OUT: 8,
+            ERROR_OUT: 5,
+            FOUL_OUT: 3,
+            MAX_SUBS: 2,
+            QUESTIONS_REG: 20,
+            QUESTIONS_OT: 3
+        };
+
+        const app = {
+            // ================= STATE =================
+            state: {
+                teams: {
+                    red: { name: 'Red Team', players: [], subsUsed: 0, contests: { denied: 0, withdrawn: 0 }, timeouts: 0 },
+                    yellow: { name: 'Yellow Team', players: [], subsUsed: 0, contests: { denied: 0, withdrawn: 0 }, timeouts: 0 }
+                },
+                history: [], 
+                settings: {
+                    bonusPointsRed: true,
+                    bonusPointsYellow: true
+                },
+                ui: {
+                    interrupted: false,
+                    modalTeam: null,
+                    view: 'setup',
+                    mobileMenuOpen: false
+                }
+            },
+            
+            // TIMER STATE
+            timer: {
+                interval: null,
+                timeLeft: 0
+            },
+
+            // ================= INIT =================
+            init() {
+                this.renderSetupInputs('red');
+                this.renderSetupInputs('yellow');
+                this.updateView();
+                
+                const dateOpts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                document.getElementById('summary-date').innerText = new Date().toLocaleDateString(undefined, dateOpts);
+            },
+
+            renderSetupInputs(team) {
+                const container = document.getElementById(`${team}-roster-inputs`);
+                container.innerHTML = '';
+                for (let i = 1; i <= 5; i++) {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center space-x-2';
+                    div.innerHTML = `
+                        <input type="text" placeholder="Quizzer ${i}" id="setup-${team}-p${i}" class="flex-1 p-2 border rounded text-sm focus:ring-1 focus:ring-blue-500">
+                        <input type="checkbox" id="setup-${team}-active${i}" ${i<=3 ? 'checked' : ''} class="w-5 h-5 text-blue-600 rounded">
+                    `;
+                    container.appendChild(div);
+                }
+            },
+
+            // ================= ACTIONS =================
+
+            startQuiz() {
+                const teams = ['red', 'yellow'];
+                let valid = true;
+
+                teams.forEach(team => {
+                    const name = document.getElementById(`setup-${team}-name`).value || `${team.charAt(0).toUpperCase() + team.slice(1)} Team`;
+                    this.state.teams[team].name = name;
+                    
+                    const players = [];
+                    let activeCount = 0;
+                    for (let i = 1; i <= 5; i++) {
+                        const pName = document.getElementById(`setup-${team}-p${i}`).value || `Quizzer ${i}`;
+                        const active = document.getElementById(`setup-${team}-active${i}`).checked;
+                        if (active) activeCount++;
+                        players.push({ id: `${team}-${i}`, name: pName, active: active, initialActive: active });
+                    }
+
+                    if (activeCount !== 3) {
+                        alert(`${name} must have exactly 3 active quizzers selected.`);
+                        valid = false;
+                    }
+                    this.state.teams[team].players = players;
+                });
+
+                if (!valid) return;
+
+                const bonusRed = document.getElementById('bonus-red').checked;
+                const bonusYellow = document.getElementById('bonus-yellow').checked;
+
+                if (bonusRed) {
+                    this.state.history.push({ id: Date.now(), type: 'bonus', team: 'red', points: 10, desc: 'Starting Bonus' });
+                }
+                if (bonusYellow) {
+                    this.state.history.push({ id: Date.now() + 1, type: 'bonus', team: 'yellow', points: 10, desc: 'Starting Bonus' });
+                }
+
+                this.state.ui.view = 'game';
+                this.updateView();
+                this.renderGame();
+            },
+
+            toggleMobileMenu() {
+                const content = document.getElementById('center-extended-content');
+                const icon = document.getElementById('mobile-menu-icon');
+                
+                if (content.classList.contains('hidden')) {
+                    content.classList.remove('hidden');
+                    content.classList.add('flex');
+                    icon.classList.remove('fa-chevron-down');
+                    icon.classList.add('fa-chevron-up');
+                } else {
+                    content.classList.add('hidden');
+                    content.classList.remove('flex');
+                    icon.classList.add('fa-chevron-down');
+                    icon.classList.remove('fa-chevron-up');
+                }
+            },
+
+            // --- TIMER LOGIC ---
+            startTimer(seconds) {
+                this.stopTimer();
+                this.timer.timeLeft = seconds;
+                this.updateTimerDisplay();
+                
+                this.timer.interval = setInterval(() => {
+                    this.timer.timeLeft--;
+                    if (this.timer.timeLeft <= 0) {
+                        this.stopTimer();
+                        // Time is up visual
+                        document.getElementById('timer-display').classList.add('text-red-600', 'animate-pulse');
+                        setTimeout(() => document.getElementById('timer-display').classList.remove('text-red-600', 'animate-pulse'), 3000);
+                        this.timer.timeLeft = 0;
+                    }
+                    this.updateTimerDisplay();
+                }, 1000);
+            },
+
+            stopTimer() {
+                if (this.timer.interval) clearInterval(this.timer.interval);
+                this.timer.interval = null;
+                this.timer.timeLeft = 0;
+                this.updateTimerDisplay();
+                document.getElementById('timer-display').classList.remove('text-red-600', 'animate-pulse');
+            },
+
+            updateTimerDisplay() {
+                const min = Math.floor(this.timer.timeLeft / 60).toString().padStart(2, '0');
+                const sec = (this.timer.timeLeft % 60).toString().padStart(2, '0');
+                document.getElementById('timer-display').innerText = `${min}:${sec}`;
+            },
+
+            // Helper to get pending note and clear it
+            getAndClearPendingNote() {
+                const noteInput = document.getElementById('pending-note');
+                const note = noteInput.value.trim();
+                noteInput.value = '';
+                return note;
+            },
+
+            handleAnswer(team, playerId, type) {
+                const computed = this.computeStats();
+                
+                if (computed.reboundMode && computed.reboundTeam !== team) return;
+
+                const event = {
+                    id: Date.now(),
+                    type: 'answer',
+                    team: team,
+                    playerId: playerId,
+                    result: type,
+                    interrupted: this.state.ui.interrupted,
+                    note: this.getAndClearPendingNote()
+                };
+
+                this.state.history.push(event);
+
+                this.state.ui.interrupted = false;
+                document.getElementById('interrupt-toggle').checked = false;
+                this.toggleInterrupted();
+
+                this.renderGame();
+                this.checkGameEnd();
+            },
+
+            handleNoResponse() {
+                if(confirm("Confirm No Response?")) {
+                    this.state.history.push({
+                        id: Date.now(),
+                        type: 'no_response',
+                        note: this.getAndClearPendingNote()
+                    });
+                    this.renderGame();
+                    this.checkGameEnd();
+                }
+            },
+
+            handleTeamFoul(team) {
+                if(confirm(`Assess a Team Foul to ${this.state.teams[team].name}? (-5 points)`)) {
+                    this.state.history.push({
+                        id: Date.now(),
+                        type: 'team_foul',
+                        team: team,
+                        note: this.getAndClearPendingNote()
+                    });
+                    this.renderGame();
+                }
+            },
+
+            handleTimeout(team) {
+                const stats = this.computeStats();
+                const used = stats.teams[team].timeoutsUsed;
+                const limit = stats.isOvertime ? 3 : 2;
+
+                if (used >= limit) {
+                    alert(`Timeout limit reached for ${this.state.teams[team].name}.`);
+                    return;
+                }
+
+                if(confirm(`Charge a timeout to ${this.state.teams[team].name}?`)) {
+                    this.state.history.push({
+                        id: Date.now(),
+                        type: 'timeout',
+                        team: team,
+                        note: this.getAndClearPendingNote()
+                    });
+                    this.renderGame();
+                }
+            },
+
+            toggleInterrupted() {
+                const chk = document.getElementById('interrupt-toggle');
+                const label = document.getElementById('interrupt-label');
+                const bg = document.getElementById('toggle-bg');
+                const dot = document.getElementById('toggle-dot');
+
+                this.state.ui.interrupted = chk.checked;
+                
+                if (chk.checked) {
+                    label.innerText = "INT? YES";
+                    label.classList.add('text-red-600');
+                    bg.classList.replace('bg-gray-300', 'bg-red-200');
+                    dot.classList.add('translate-x-6', 'bg-red-500');
+                    dot.classList.remove('bg-white');
+                } else {
+                    label.innerText = "INT? NO";
+                    label.classList.remove('text-red-600');
+                    bg.classList.replace('bg-red-200', 'bg-gray-300');
+                    dot.classList.remove('translate-x-6', 'bg-red-500');
+                    dot.classList.add('bg-white');
+                }
+            },
+
+            undoLast() {
+                if (this.state.history.length === 0) return;
+                const last = this.state.history[this.state.history.length - 1];
+                if (last.type === 'bonus') {
+                    if(!confirm("Undo starting bonus?")) return;
+                }
+                this.state.history.pop();
+                
+                this.state.ui.interrupted = false; 
+                document.getElementById('interrupt-toggle').checked = false;
+                this.toggleInterrupted();
+                
+                this.renderGame();
+            },
+
+            // DELETE EVENT LOGIC
+            deleteEvent(id) {
+                if(!confirm("Clear this event? It will become a blank question to preserve numbering.")) return;
+                const index = this.state.history.findIndex(e => e.id === id);
+                if (index !== -1) {
+                    // Replaces the event with a void placeholder
+                    this.state.history[index] = { id: id, type: 'void', note: 'Manually cleared' };
+                    this.renderGame();
+                }
+            },
+
+            deleteEventFromModal() {
+                const id = parseInt(document.getElementById('edit-event-id').value);
+                this.deleteEvent(id);
+                document.getElementById('edit-modal').classList.add('hidden');
+            },
+
+            // --- Editing Logic ---
+            editEvent(id) {
+                const event = this.state.history.find(e => e.id === id);
+                // Allow editing most events
+                if (!event) return;
+
+                document.getElementById('edit-event-id').value = id;
+                document.getElementById('edit-note').value = event.note || '';
+                
+                // Set initial type
+                let resultType = event.type === 'answer' ? event.result : event.type;
+                document.getElementById('edit-result').value = resultType;
+                
+                document.getElementById('edit-interrupted').checked = event.interrupted || false;
+                
+                // Setup Team/Player defaults
+                const defaultTeam = event.team || 'red';
+                document.getElementById('edit-team').value = defaultTeam;
+                
+                this.refreshEditPlayers(event.playerId); 
+                this.toggleEditFields(); 
+
+                document.getElementById('edit-modal').classList.remove('hidden');
+            },
+
+            toggleEditFields() {
+                const type = document.getElementById('edit-result').value;
+                const playerSection = document.getElementById('edit-player-section');
+                const quizzerContainer = document.getElementById('edit-quizzer-container');
+                const intContainer = document.getElementById('edit-interrupted-container');
+
+                if (type === 'no_response' || type === 'void') {
+                    playerSection.classList.add('hidden');
+                } else if (type === 'timeout' || type === 'team_foul') {
+                    playerSection.classList.remove('hidden');
+                    quizzerContainer.classList.add('hidden');
+                    intContainer.classList.add('hidden');
+                } else {
+                    // Answer
+                    playerSection.classList.remove('hidden');
+                    quizzerContainer.classList.remove('hidden');
+                    intContainer.classList.remove('hidden');
+                }
+            },
+
+            refreshEditPlayers(selectedPlayerId = null) {
+                const team = document.getElementById('edit-team').value;
+                const pSelect = document.getElementById('edit-quizzer');
+                pSelect.innerHTML = '';
+                
+                this.state.teams[team].players.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.innerText = p.name;
+                    if(selectedPlayerId && p.id === selectedPlayerId) opt.selected = true;
+                    pSelect.appendChild(opt);
+                });
+            },
+
+            saveEventChange() {
+                const id = parseInt(document.getElementById('edit-event-id').value);
+                const typeOrResult = document.getElementById('edit-result').value;
+                const note = document.getElementById('edit-note').value;
+                const team = document.getElementById('edit-team').value;
+                
+                const eventIndex = this.state.history.findIndex(e => e.id === id);
+                if (eventIndex > -1) {
+                    let newEv = { id: id, team: team }; // Team is needed for fouls/timeouts too
+                    
+                    if (typeOrResult === 'no_response') {
+                         newEv.type = 'no_response';
+                    } else if (typeOrResult === 'void') {
+                         newEv.type = 'void';
+                    } else if (typeOrResult === 'timeout') {
+                        newEv.type = 'timeout';
+                    } else if (typeOrResult === 'team_foul') {
+                        newEv.type = 'team_foul';
+                    } else {
+                        // Converting to Answer
+                        const playerId = document.getElementById('edit-quizzer').value;
+                        const interrupted = document.getElementById('edit-interrupted').checked;
+
+                        newEv = {
+                            id: id,
+                            type: 'answer',
+                            result: typeOrResult,
+                            team: team,
+                            playerId: playerId,
+                            interrupted: interrupted
+                        };
+                    }
+                    if(note) newEv.note = note;
+                    this.state.history[eventIndex] = newEv;
+                }
+
+                document.getElementById('edit-modal').classList.add('hidden');
+                this.renderGame();
+            },
+
+            // --- Substitutions ---
+            openSubModal(team) {
+                this.state.ui.modalTeam = team;
+                const modal = document.getElementById('sub-modal');
+                const list = document.getElementById('sub-list');
+                const title = document.getElementById('sub-modal-title');
+                
+                title.innerText = `Substitute: ${this.state.teams[team].name}`;
+                list.innerHTML = '';
+
+                const stats = this.computeStats();
+                const teamStats = stats.teams[team];
+                
+                this.state.teams[team].players.forEach((p) => {
+                    const pStats = teamStats.players[p.id];
+                    const isDisabled = pStats.isQuizOut || pStats.isErrorOut || pStats.isFoulOut;
+                    const statusText = pStats.isQuizOut ? '(QO)' : pStats.isErrorOut ? '(EO)' : pStats.isFoulOut ? '(FO)' : '';
+                    
+                    const div = document.createElement('div');
+                    div.className = `flex justify-between items-center p-3 border rounded ${pStats.active ? 'bg-blue-50 border-blue-200' : 'bg-gray-50'}`;
+                    
+                    div.innerHTML = `
+                        <div class="flex items-center">
+                            <span class="font-bold mr-2">${p.name}</span>
+                            <span class="text-xs font-bold text-red-500">${statusText}</span>
+                        </div>
+                        <input type="checkbox" class="sub-check w-6 h-6" 
+                            id="sub-chk-${p.id}"
+                            value="${p.id}" 
+                            ${pStats.active ? 'checked' : ''} 
+                            ${isDisabled ? 'disabled' : ''}>
+                    `;
+                    list.appendChild(div);
+                });
+
+                modal.classList.remove('hidden');
+            },
+
+            confirmSubs() {
+                const team = this.state.ui.modalTeam;
+                const checks = document.getElementById('sub-list').querySelectorAll('.sub-check');
+                const nextActiveIds = [];
+                
+                checks.forEach(c => {
+                    if (c.checked) nextActiveIds.push(c.value);
+                });
+
+                if (nextActiveIds.length !== 3) {
+                    alert("You must have exactly 3 active quizzers.");
+                    return;
+                }
+
+                const stats = this.computeStats();
+                const currentActive = this.state.teams[team].players.filter(p => {
+                    return stats.teams[team].players[p.id].active;
+                }).map(p => p.id);
+
+                const entering = nextActiveIds.filter(id => !currentActive.includes(id));
+                const leaving = currentActive.filter(id => !nextActiveIds.includes(id));
+
+                if (entering.length === 0) {
+                    document.getElementById('sub-modal').classList.add('hidden');
+                    return;
+                }
+
+                let isFree = false;
+                leaving.forEach(id => {
+                    const pStat = stats.teams[team].players[id];
+                    if (pStat.isQuizOut || pStat.isErrorOut || pStat.isFoulOut) isFree = true;
+                });
+
+                if (!isFree) {
+                    if (stats.teams[team].subsUsed >= CONSTANTS.MAX_SUBS) {
+                        alert("No voluntary substitutions remaining!");
+                        return;
+                    }
+                    if(!confirm("This will count as a voluntary substitution. Proceed?")) return;
+                }
+
+                this.state.history.push({
+                    id: Date.now(),
+                    type: 'sub',
+                    team: team,
+                    entering: entering,
+                    leaving: leaving,
+                    isFree: isFree
+                });
+
+                document.getElementById('sub-modal').classList.add('hidden');
+                this.renderGame();
+            },
+
+            addContest(team) {
+                this.state.ui.modalTeam = team;
+                document.getElementById('contest-modal').classList.remove('hidden');
+            },
+
+            recordContest(result) {
+                const team = this.state.ui.modalTeam;
+                const stats = this.computeStats();
+                const currentContests = stats.teams[team].contests;
+
+                if (currentContests.denied >= 2 && result === 'deny') {
+                    alert("Team has reached maximum denied contests.");
+                    return;
+                }
+
+                this.state.history.push({
+                    id: Date.now(),
+                    type: 'contest',
+                    team: team,
+                    result: result
+                });
+
+                document.getElementById('contest-modal').classList.add('hidden');
+                this.renderGame();
+            },
+
+            // ================= COMPUTE ENGINE =================
+            computeStats() {
+                const stats = {
+                    red: 0, yellow: 0,
+                    questionNum: 1,
+                    isOvertime: false,
+                    reboundMode: false,
+                    reboundTeam: null,
+                    teams: {
+                        red: { players: {}, subsUsed: 0, contests: { denied: 0, withdrawn: 0, granted: 0 }, timeoutsUsed: 0 },
+                        yellow: { players: {}, subsUsed: 0, contests: { denied: 0, withdrawn: 0, granted: 0 }, timeoutsUsed: 0 }
+                    },
+                    gameOver: false,
+                    viewLog: [] 
+                };
+
+                // Init players
+                ['red', 'yellow'].forEach(t => {
+                    this.state.teams[t].players.forEach(p => {
+                        stats.teams[t].players[p.id] = {
+                            active: p.initialActive,
+                            correct: 0, errors: 0, fouls: 0, points: 0,
+                            isQuizOut: false, isErrorOut: false, isFoulOut: false
+                        };
+                    });
+                });
+
+                // Apply Events
+                this.state.history.forEach(ev => {
+                    const logItem = { ...ev, computedQ: null, computedVal: 0, isReboundAction: false };
+
+                    if (ev.type === 'bonus') {
+                        if (ev.team) {
+                            stats[ev.team] += ev.points;
+                            logItem.computedDesc = `${this.state.teams[ev.team].name} Starting Bonus`;
+                        } else {
+                            stats.red += ev.points;
+                            stats.yellow += ev.points;
+                            logItem.computedDesc = "Global Starting Bonus";
+                        }
+                    } 
+                    else if (ev.type === 'sub') {
+                        ev.entering.forEach(id => stats.teams[ev.team].players[id].active = true);
+                        ev.leaving.forEach(id => stats.teams[ev.team].players[id].active = false);
+                        if (!ev.isFree) stats.teams[ev.team].subsUsed++;
+                        logItem.computedDesc = `Sub: In ${ev.entering.length}, Out ${ev.leaving.length}`;
+                    }
+                    else if (ev.type === 'contest') {
+                        if (ev.result === 'deny') stats.teams[ev.team].contests.denied++;
+                        if (ev.result === 'withdraw') stats.teams[ev.team].contests.withdrawn++;
+                        if (ev.result === 'grant') stats.teams[ev.team].contests.granted++;
+                    }
+                    else if (ev.type === 'team_foul') {
+                        stats[ev.team] -= 5;
+                        logItem.computedDesc = `Team Foul: ${this.state.teams[ev.team].name} (-5)`;
+                    }
+                    else if (ev.type === 'timeout') {
+                        stats.teams[ev.team].timeoutsUsed++;
+                        logItem.computedDesc = `Timeout: ${this.state.teams[ev.team].name}`;
+                    }
+                    else if (ev.type === 'no_response') {
+                        logItem.computedQ = stats.questionNum;
+                        
+                        if (stats.reboundMode) {
+                             logItem.computedDesc = "Reread: No Response";
+                        } else {
+                             logItem.computedDesc = "No Response";
+                        }
+
+                        stats.questionNum++;
+                        stats.reboundMode = false;
+                        stats.reboundTeam = null;
+                    }
+                    else if (ev.type === 'void') {
+                         logItem.computedQ = stats.questionNum;
+                         logItem.computedDesc = "Question Cleared/Void";
+                         stats.questionNum++;
+                         stats.reboundMode = false;
+                         stats.reboundTeam = null;
+                    }
+                    else if (ev.type === 'answer') {
+                        const isReboundAction = stats.reboundMode;
+                        const qNum = stats.questionNum;
+                        
+                        let val = 0;
+                        if (qNum <= 20) {
+                            if (qNum <= 8) val = 10;
+                            else if (qNum <= 17) val = 20;
+                            else val = 30;
+                        } else {
+                            val = 20; // OT
+                        }
+
+                        logItem.computedQ = qNum;
+                        logItem.computedVal = val;
+                        logItem.isReboundAction = isReboundAction;
+
+                        const pStats = stats.teams[ev.team].players[ev.playerId];
+                        const halfVal = Math.ceil(val / 2);
+
+                        if (ev.result === 'correct') {
+                            pStats.correct++;
+                            pStats.points += val;
+                            stats[ev.team] += val;
+                            if (pStats.correct >= CONSTANTS.QUIZ_OUT) pStats.isQuizOut = true;
+
+                            stats.questionNum++;
+                            stats.reboundMode = false;
+                            stats.reboundTeam = null;
+                        } 
+                        else if (ev.result === 'error') {
+                            pStats.errors++;
+                            pStats.points -= halfVal;
+                            stats[ev.team] -= halfVal;
+                            if (pStats.errors >= CONSTANTS.ERROR_OUT) pStats.isErrorOut = true;
+
+                            if (ev.interrupted && !isReboundAction) {
+                                stats.reboundMode = true;
+                                stats.reboundTeam = (ev.team === 'red') ? 'yellow' : 'red';
+                            } else {
+                                stats.questionNum++;
+                                stats.reboundMode = false;
+                                stats.reboundTeam = null;
+                            }
+                        }
+                        else if (ev.result === 'foul') {
+                            pStats.fouls++;
+                            pStats.points -= 5;
+                            stats[ev.team] -= 5;
+                            if (pStats.fouls >= CONSTANTS.FOUL_OUT) pStats.isFoulOut = true;
+                        }
+                    }
+
+                    stats.viewLog.push(logItem);
+                });
+
+                // End Game / Overtime Logic
+                if (stats.questionNum > CONSTANTS.QUESTIONS_REG) {
+                    if (stats.red === stats.yellow && stats.questionNum <= CONSTANTS.QUESTIONS_REG + CONSTANTS.QUESTIONS_OT) {
+                        stats.isOvertime = true;
+                    } else if (stats.questionNum > CONSTANTS.QUESTIONS_REG && stats.red !== stats.yellow) {
+                        stats.gameOver = true;
+                    } else if (stats.questionNum > CONSTANTS.QUESTIONS_REG + CONSTANTS.QUESTIONS_OT) {
+                        stats.gameOver = true; 
+                    }
+                }
+
+                return stats;
+            },
+
+            checkGameEnd() {
+                const stats = this.computeStats();
+                if (stats.gameOver) {
+                    this.endQuiz();
+                }
+            },
+
+            endQuiz() {
+                this.state.ui.view = 'summary';
+                this.updateView();
+                this.renderSummary();
+            },
+
+            resetQuiz() {
+                if(confirm("Start a new quiz? All current progress will be lost.")) {
+                    location.reload();
+                }
+            },
+
+            returnToGame() {
+                this.state.ui.view = 'game';
+                this.updateView();
+                this.renderGame();
+            },
+
+            // ================= RENDERERS =================
+            updateView() {
+                document.getElementById('setup-view').classList.add('hidden');
+                document.getElementById('game-view').classList.add('hidden');
+                document.getElementById('summary-view').classList.add('hidden');
+                
+                document.getElementById(`${this.state.ui.view}-view`).classList.remove('hidden');
+            },
+
+            renderGame() {
+                if (this.state.ui.view !== 'game') return;
+
+                const stats = this.computeStats();
+                
+                // Scoreboard
+                document.getElementById('sb-red-score').innerText = stats.red;
+                document.getElementById('sb-yellow-score').innerText = stats.yellow;
+                document.getElementById('sb-red-name').innerText = this.state.teams.red.name;
+                document.getElementById('sb-yellow-name').innerText = this.state.teams.yellow.name;
+                document.getElementById('sb-red-fouls').innerText = `Fouls: ${stats.teams.red.players ? Object.values(stats.teams.red.players).reduce((acc, p) => acc + p.fouls, 0) : 0}`;
+                document.getElementById('sb-yellow-fouls').innerText = `Fouls: ${stats.teams.yellow.players ? Object.values(stats.teams.yellow.players).reduce((acc, p) => acc + p.fouls, 0) : 0}`;
+                
+                // Question Info
+                let qVal = 0;
+                if (stats.questionNum <= 20) {
+                     if (stats.questionNum <= 8) qVal = 10;
+                     else if (stats.questionNum <= 17) qVal = 20;
+                     else qVal = 30;
+                } else { qVal = 20; }
+
+                if (stats.gameOver) {
+                    document.getElementById('sb-q-num').innerText = "FINAL";
+                    document.getElementById('sb-q-val').innerText = "---";
+                } else {
+                    document.getElementById('sb-q-num').innerText = `${stats.isOvertime ? 'OT ' : 'Q'}${stats.questionNum}`;
+                    document.getElementById('sb-q-val').innerText = `${qVal} PTS`;
+                }
+
+                // Timeout Buttons Update
+                const limit = stats.isOvertime ? 3 : 2;
+                ['red', 'yellow'].forEach(t => {
+                    const btn = document.getElementById(`btn-timeout-${t}`);
+                    const lbl = document.getElementById(`lbl-timeout-${t}`);
+                    const used = stats.teams[t].timeoutsUsed;
+                    lbl.innerText = `(${used}/${limit})`;
+                    
+                    if (used >= limit) {
+                        btn.classList.add('opacity-50', 'cursor-not-allowed');
+                    } else {
+                        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }
+                });
+
+                // Rebound/Reread Visuals
+                const banner = document.getElementById('rebound-banner');
+                const redOverlay = document.getElementById('red-rebound-overlay');
+                const yellowOverlay = document.getElementById('yellow-rebound-overlay');
+
+                if (stats.reboundMode) {
+                    banner.classList.remove('hidden');
+                    if (stats.reboundTeam === 'red') {
+                        yellowOverlay.classList.remove('hidden');
+                        redOverlay.classList.add('hidden');
+                    } else {
+                        redOverlay.classList.remove('hidden');
+                        yellowOverlay.classList.add('hidden');
+                    }
+                } else {
+                    banner.classList.add('hidden');
+                    redOverlay.classList.add('hidden');
+                    yellowOverlay.classList.add('hidden');
+                }
+
+                // Render Players
+                ['red', 'yellow'].forEach(team => {
+                    const container = document.getElementById(`${team}-players`);
+                    container.innerHTML = '';
+                    
+                    document.getElementById(`${team}-contests`).innerText = 
+                        `${stats.teams[team].contests.denied}/${stats.teams[team].contests.withdrawn}`;
+                    
+                    document.getElementById(`${team}-sub-count`).innerText = `Subs: ${stats.teams[team].subsUsed}/2`;
+
+                    this.state.teams[team].players.forEach(p => {
+                        const pStat = stats.teams[team].players[p.id];
+                        
+                        let cardClass = "quizzer-card bg-white rounded-lg shadow p-2 md:p-3 border-l-4 relative overflow-hidden";
+                        if (!pStat.active) cardClass += " opacity-60 bg-gray-100";
+                        
+                        let borderColor = team === 'red' ? 'border-red-500' : 'border-yellow-500';
+                        let statusIcon = '';
+                        let nameClass = "font-bold text-base md:text-lg leading-none truncate";
+
+                        if (pStat.isQuizOut) {
+                            borderColor = 'border-yellow-400';
+                            cardClass += " ring-2 ring-yellow-300";
+                            nameClass += " text-yellow-600";
+                            statusIcon = '<i class="fas fa-star text-yellow-400 ml-1 md:ml-2" title="Quiz Out"></i>';
+                        } else if (pStat.isErrorOut) {
+                            borderColor = 'border-gray-400';
+                            nameClass += " line-through text-red-400";
+                            statusIcon = '<i class="fas fa-times-circle text-red-400 ml-1 md:ml-2" title="Error Out"></i>';
+                        } else if (pStat.isFoulOut) {
+                            nameClass += " text-gray-400";
+                            statusIcon = '<span class="text-[10px] bg-gray-200 px-1 rounded ml-1">FOUL</span>';
+                        }
+
+                        cardClass += ` ${borderColor}`;
+
+                        const card = document.createElement('div');
+                        card.className = cardClass;
+                        
+                        const btnBase = "px-1 py-1 md:px-2 md:py-1 rounded text-[10px] md:text-xs font-bold uppercase shadow-sm active:scale-95 transition-all";
+                        const isDisabled = !pStat.active || pStat.isQuizOut || pStat.isErrorOut || pStat.isFoulOut || stats.gameOver;
+                        
+                        card.innerHTML = `
+                            <div class="flex justify-between items-center mb-1 md:mb-2">
+                                <div class="${nameClass}" style="max-width: 70%;">${p.name} ${statusIcon}</div>
+                                <div class="text-lg md:text-xl font-black text-gray-700">${pStat.points}</div>
+                            </div>
+                            <div class="flex space-x-1 md:space-x-2 text-[10px] md:text-xs text-gray-500 mb-1 md:mb-2">
+                                <span><i class="fas fa-check text-green-500"></i> ${pStat.correct}</span>
+                                <span><i class="fas fa-times text-red-500"></i> ${pStat.errors}</span>
+                                <span><i class="fas fa-exclamation-triangle text-orange-500"></i> ${pStat.fouls}</span>
+                            </div>
+                            ${ !isDisabled ? `
+                            <div class="grid grid-cols-5 gap-1">
+                                <button onclick="app.handleAnswer('${team}', '${p.id}', 'correct')" 
+                                    class="${btnBase} col-span-2 bg-green-500 text-white hover:bg-green-600">
+                                    Correct
+                                </button>
+                                <button onclick="app.handleAnswer('${team}', '${p.id}', 'error')" 
+                                    class="${btnBase} col-span-2 bg-red-500 text-white hover:bg-red-600">
+                                    Error
+                                </button>
+                                <button onclick="app.handleAnswer('${team}', '${p.id}', 'foul')" 
+                                    class="${btnBase} col-span-1 bg-gray-200 text-gray-700 hover:bg-gray-300" title="Foul">
+                                    F
+                                </button>
+                            </div>
+                            ` : ''}
+                        `;
+                        container.appendChild(card);
+                    });
+                });
+
+                // Render Logs (using viewLog)
+                const logContainer = document.getElementById('event-log');
+                logContainer.innerHTML = '';
+                
+                if (this.state.history.length > 0) {
+                     const undoBtn = document.createElement('div');
+                     undoBtn.innerHTML = `<button onclick="app.undoLast()" class="w-full mb-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs py-1 rounded"><i class="fas fa-undo"></i> Undo Last Event</button>`;
+                     logContainer.appendChild(undoBtn);
+                }
+
+                // Reverse render
+                [...stats.viewLog].reverse().forEach(ev => {
+                    const el = document.createElement('div');
+                    el.className = "flex items-start p-2 border-b border-gray-100 text-xs hover:bg-gray-50 group cursor-pointer";
+                    if (ev.type === 'answer' || ev.type === 'no_response' || ev.type === 'team_foul' || ev.type === 'timeout' || ev.type === 'void') {
+                         el.onclick = () => app.editEvent(ev.id);
+                         el.title = "Click to Edit Event";
+                    }
+
+                    let content = '';
+                    let noteHtml = ev.note ? `<div class="text-gray-400 italic mt-1 w-full pl-8"><i class="fas fa-sticky-note mr-1 text-[10px]"></i>${ev.note}</div>` : '';
+                    
+                    if (ev.type === 'answer') {
+                        const bg = ev.result === 'correct' ? 'bg-green-100 text-green-800' : (ev.result === 'error' ? 'bg-red-100 text-red-800' : 'bg-gray-200');
+                        const pName = this.state.teams[ev.team].players.find(p => p.id === ev.playerId).name;
+                        
+                        content = `
+                            <div class="flex w-full items-center">
+                                <div class="w-8 font-bold text-gray-500">Q${ev.computedQ}</div>
+                                <div class="flex-1">
+                                    <span class="font-bold ${ev.team === 'red' ? 'text-red-600' : 'text-yellow-600'}">${pName}</span>
+                                    <span class="ml-1 px-1.5 rounded ${bg}">${ev.result.toUpperCase()}</span>
+                                    ${ev.interrupted ? '<span class="text-orange-500 ml-1"><i class="fas fa-bolt"></i> Int</span>' : ''}
+                                    ${ev.isReboundAction ? '<span class="text-purple-500 ml-1 font-bold">RR</span>' : ''}
+                                </div>
+                                <i class="fas fa-pencil-alt text-gray-300 group-hover:text-blue-500"></i>
+                                <button onclick="event.stopPropagation(); app.deleteEvent(${ev.id})" class="ml-2 text-gray-300 hover:text-red-500" title="Delete Event"><i class="fas fa-trash"></i></button>
+                            </div>
+                            ${noteHtml}
+                        `;
+                    } 
+                    else if (ev.type === 'no_response') {
+                         content = `
+                            <div class="flex w-full items-center">
+                                <div class="w-8 font-bold text-gray-500">Q${ev.computedQ}</div>
+                                <div class="flex-1 italic text-gray-500">${ev.computedDesc || 'No Response'}</div>
+                                <i class="fas fa-pencil-alt text-gray-300 group-hover:text-blue-500"></i>
+                                <button onclick="event.stopPropagation(); app.deleteEvent(${ev.id})" class="ml-2 text-gray-300 hover:text-red-500" title="Delete Event"><i class="fas fa-trash"></i></button>
+                            </div>
+                            ${noteHtml}
+                        `;
+                    }
+                    else if (ev.type === 'void') {
+                        content = `
+                            <div class="flex w-full items-center">
+                                <div class="w-8 font-bold text-gray-500">Q${ev.computedQ}</div>
+                                <div class="flex-1 italic text-red-300 line-through">Question Cleared</div>
+                                <i class="fas fa-pencil-alt text-gray-300 group-hover:text-blue-500"></i>
+                            </div>
+                            ${noteHtml}
+                        `;
+                    }
+                    else if (ev.type === 'sub' || ev.type === 'team_foul' || ev.type === 'timeout') {
+                        let icon = 'users';
+                        if (ev.type === 'team_foul') icon = 'exclamation-circle text-red-500';
+                        if (ev.type === 'timeout') icon = 'clock text-gray-500';
+                        
+                        content = `
+                             <div class="w-8"><i class="fas fa-${icon}"></i></div>
+                             <div class="flex-1 text-gray-600">
+                                ${ev.computedDesc}
+                             </div>
+                             ${noteHtml}
+                        `;
+                    } else if (ev.type === 'contest') {
+                         content = `
+                             <div class="w-8"><i class="fas fa-gavel text-gray-500"></i></div>
+                             <div class="flex-1">
+                                <b>${this.state.teams[ev.team].name}</b> Contest: <b>${ev.result.toUpperCase()}</b>
+                             </div>
+                        `;
+                    } else if (ev.type === 'bonus') {
+                        content = `<div class="w-full text-center text-blue-500 italic">${ev.computedDesc}</div>`;
+                    }
+
+                    el.innerHTML = content;
+                    logContainer.appendChild(el);
+                });
+            },
+
+            renderSummary() {
+                const stats = this.computeStats();
+                
+                document.getElementById('sum-red-name').innerText = this.state.teams.red.name;
+                document.getElementById('sum-yellow-name').innerText = this.state.teams.yellow.name;
+                document.getElementById('sum-red-score').innerText = stats.red;
+                document.getElementById('sum-yellow-score').innerText = stats.yellow;
+
+                if (stats.red > stats.yellow) {
+                    document.getElementById('sum-red-score').classList.add('text-green-600');
+                    document.getElementById('sum-red-score').classList.remove('text-red-600');
+                } else if (stats.yellow > stats.red) {
+                    document.getElementById('sum-yellow-score').classList.add('text-green-600');
+                    document.getElementById('sum-yellow-score').classList.remove('text-yellow-600');
+                }
+
+                let allPlayers = [];
+                ['red', 'yellow'].forEach(t => {
+                    this.state.teams[t].players.forEach(p => {
+                        allPlayers.push({
+                            name: p.name,
+                            team: this.state.teams[t].name,
+                            ...stats.teams[t].players[p.id]
+                        });
+                    });
+                });
+                allPlayers.sort((a, b) => b.points - a.points);
+                
+                document.getElementById('sum-high-scorer').innerHTML = `${allPlayers[0]?.name || '-'} <span class="text-sm text-gray-500">(${allPlayers[0]?.points || 0})</span>`;
+                document.getElementById('sum-2nd-scorer').innerHTML = `${allPlayers[1]?.name || '-'} <span class="text-sm text-gray-500">(${allPlayers[1]?.points || 0})</span>`;
+
+                const tbody = document.getElementById('summary-table-body');
+                tbody.innerHTML = '';
+
+                let runningRed = 0;
+                let runningYellow = 0;
+                
+                // Use viewLog to render table
+                stats.viewLog.forEach(ev => {
+                    if (ev.type === 'bonus') {
+                        let bonusRed = 0;
+                        let bonusYellow = 0;
+                        if(ev.team) {
+                            if(ev.team === 'red') { bonusRed = ev.points; runningRed += 10; }
+                            if(ev.team === 'yellow') { bonusYellow = ev.points; runningYellow += 10; }
+                        } else {
+                            // legacy
+                             runningRed += 10; runningYellow += 10; bonusRed=10; bonusYellow=10;
+                        }
+
+                        const tr = document.createElement('tr');
+                        tr.className = "bg-blue-50 italic";
+                        tr.innerHTML = `<td colspan="6" class="px-4 py-2">${ev.computedDesc}</td><td class="px-4 py-2 text-right">R:${runningRed} Y:${runningYellow}</td>`;
+                        tbody.appendChild(tr);
+                        return;
+                    }
+
+                    // Prepare note HTML for table if note exists
+                    const noteHtml = ev.note ? `<div class="text-[10px] text-gray-500 italic mt-0.5"><i class="fas fa-sticky-note mr-1"></i>${ev.note}</div>` : '';
+
+                    if (ev.type === 'team_foul') {
+                        if(ev.team === 'red') runningRed -= 5;
+                        else runningYellow -= 5;
+                        const tr = document.createElement('tr');
+                        tr.className = "bg-red-50 text-red-800";
+                        tr.innerHTML = `<td colspan="6" class="px-4 py-2 font-bold">${ev.computedDesc} ${noteHtml}</td><td class="px-4 py-2 text-right">R:${runningRed} Y:${runningYellow}</td>`;
+                        tbody.appendChild(tr);
+                        return;
+                    }
+
+                    if (ev.type === 'no_response' || ev.type === 'void') {
+                        const tr = document.createElement('tr');
+                        tr.className = "bg-gray-50 italic text-gray-500";
+                        tr.innerHTML = `
+                            <td class="px-4 py-2">${ev.computedQ}</td>
+                            <td colspan="5" class="px-4 py-2">
+                                ${ev.computedDesc || (ev.type === 'void' ? 'Question Cleared' : 'No Response')}
+                                ${noteHtml}
+                            </td>
+                            <td class="px-4 py-2 text-right">R:${runningRed} Y:${runningYellow}</td>
+                        `;
+                        tbody.appendChild(tr);
+                        return;
+                    }
+
+                    if (ev.type !== 'answer') return;
+
+                    const half = Math.ceil(ev.computedVal/2);
+                    let pts = 0;
+                    if(ev.result === 'correct') pts = ev.computedVal;
+                    if(ev.result === 'error') pts = -half;
+                    if(ev.result === 'foul') pts = -5; 
+
+                    if(ev.team === 'red') runningRed += pts;
+                    else runningYellow += pts;
+
+                    const pName = this.state.teams[ev.team].players.find(p => p.id === ev.playerId).name;
+                    
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b hover:bg-gray-50";
+                    tr.innerHTML = `
+                        <td class="px-4 py-2 font-bold text-gray-500">${ev.computedQ}</td>
+                        <td class="px-4 py-2">${ev.computedVal}</td>
+                        <td class="px-4 py-2 font-semibold ${ev.team === 'red' ? 'text-red-700' : 'text-yellow-700'}">${this.state.teams[ev.team].name}</td>
+                        <td class="px-4 py-2">
+                            ${pName}
+                            ${noteHtml}
+                        </td>
+                        <td class="px-4 py-2">
+                            <span class="${ev.result === 'correct' ? 'text-green-600 font-bold' : (ev.result === 'error' ? 'text-red-600' : 'text-orange-500')}">
+                                ${ev.result.toUpperCase()} ${ev.isReboundAction ? '(RR)' : ''}
+                            </span>
+                        </td>
+                        <td class="px-4 py-2 text-center text-orange-500">${ev.interrupted ? '<i class="fas fa-bolt"></i>' : '-'}</td>
+                        <td class="px-4 py-2 text-right font-mono font-bold">R:${runningRed} &nbsp; Y:${runningYellow}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        };
+
+        // Initialize App
+        app.init();
+
+    </script>
+</body>
+</html>
