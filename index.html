@@ -273,13 +273,15 @@
                 </div>
 
                 <!-- RED TEAM PANEL (Mobile: Left Column) -->
-                <div class="col-start-1 row-start-2 md:col-start-1 md:row-start-1 bg-red-50 overflow-y-auto p-1 md:p-2 border-r border-red-100 flex flex-col relative h-full">
+                <!-- Changed: Added overflow-hidden to parent, removed overflow-y-auto from parent. -->
+                <div class="col-start-1 row-start-2 md:col-start-1 md:row-start-1 bg-red-50 p-1 md:p-2 border-r border-red-100 flex flex-col relative h-full overflow-hidden">
                     <!-- Rebound/Reread Overlay -->
                     <div id="red-rebound-overlay" class="hidden absolute inset-0 bg-gray-900/80 z-20 flex items-center justify-center text-white font-bold text-center p-4 backdrop-blur-sm text-xs md:text-base">
                         Waiting for Yellow Reread...
                     </div>
-                    <!-- Team Controls Header -->
-                    <div class="mb-2 grid grid-cols-1 xl:grid-cols-2 gap-1">
+                    
+                    <!-- Team Controls Header (Static) -->
+                    <div class="mb-2 grid grid-cols-1 xl:grid-cols-2 gap-1 shrink-0">
                         <button onclick="app.handleTeamFoul('red')" class="bg-red-100 border border-red-300 text-red-800 text-[10px] md:text-xs font-bold py-1 rounded hover:bg-red-200">
                             Team Foul
                         </button>
@@ -288,11 +290,13 @@
                         </button>
                     </div>
 
-                    <div id="red-players" class="space-y-2 pb-16">
+                    <!-- Player List (Scrolls independently) -->
+                    <div id="red-players" class="flex-1 overflow-y-auto space-y-2 min-h-0">
                         <!-- Cards injected here -->
                     </div>
-                    <!-- Footer Controls -->
-                    <div class="mt-auto pt-2 sticky bottom-0 bg-red-50 p-1 border-t border-red-200">
+                    
+                    <!-- Footer Controls (Static at bottom) -->
+                    <div class="mt-auto pt-2 bg-red-50 p-1 border-t border-red-200 shrink-0">
                         <button onclick="app.openSubModal('red')" class="w-full py-2 bg-white border border-red-300 text-red-700 rounded hover:bg-red-100 text-xs font-semibold shadow-sm">
                             <i class="fas fa-users-cog mr-1"></i> Subs
                         </button>
@@ -301,13 +305,14 @@
                 </div>
 
                 <!-- YELLOW TEAM PANEL (Mobile: Right Column) -->
-                <div class="col-start-2 row-start-2 md:col-start-3 md:row-start-1 bg-yellow-50 overflow-y-auto p-1 md:p-2 flex flex-col relative h-full">
+                <div class="col-start-2 row-start-2 md:col-start-3 md:row-start-1 bg-yellow-50 p-1 md:p-2 flex flex-col relative h-full overflow-hidden">
                      <!-- Rebound/Reread Overlay -->
                      <div id="yellow-rebound-overlay" class="hidden absolute inset-0 bg-gray-900/80 z-20 flex items-center justify-center text-white font-bold text-center p-4 backdrop-blur-sm text-xs md:text-base">
                         Waiting for Red Reread...
                     </div>
-                    <!-- Team Controls Header -->
-                    <div class="mb-2 grid grid-cols-1 xl:grid-cols-2 gap-1">
+                    
+                    <!-- Team Controls Header (Static) -->
+                    <div class="mb-2 grid grid-cols-1 xl:grid-cols-2 gap-1 shrink-0">
                         <button onclick="app.handleTeamFoul('yellow')" class="bg-yellow-100 border border-yellow-300 text-yellow-800 text-[10px] md:text-xs font-bold py-1 rounded hover:bg-yellow-200">
                             Team Foul
                         </button>
@@ -316,11 +321,13 @@
                         </button>
                     </div>
 
-                    <div id="yellow-players" class="space-y-2 pb-16">
+                    <!-- Player List (Scrolls independently) -->
+                    <div id="yellow-players" class="flex-1 overflow-y-auto space-y-2 min-h-0">
                         <!-- Cards injected here -->
                     </div>
-                    <!-- Footer Controls -->
-                    <div class="mt-auto pt-2 sticky bottom-0 bg-yellow-50 p-1 border-t border-yellow-200">
+                    
+                    <!-- Footer Controls (Static at bottom) -->
+                    <div class="mt-auto pt-2 bg-yellow-50 p-1 border-t border-yellow-200 shrink-0">
                         <button onclick="app.openSubModal('yellow')" class="w-full py-2 bg-white border border-yellow-300 text-yellow-700 rounded hover:bg-yellow-100 text-xs font-semibold shadow-sm">
                             <i class="fas fa-users-cog mr-1"></i> Subs
                         </button>
