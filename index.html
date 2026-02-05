@@ -193,8 +193,8 @@
             <div class="flex-1 overflow-hidden grid grid-cols-2 grid-rows-[auto_1fr] md:grid-cols-3 md:grid-rows-1">
                 
                 <!-- CENTER LOGIC PANEL (Mobile: Top Full Width, Desktop: Center Column) -->
-                <!-- Removed max-h constraint on md to ensure full height flex works properly -->
-                <div class="col-span-2 row-start-1 md:col-span-1 md:col-start-2 md:row-start-1 bg-white flex flex-col border-b md:border-b-0 md:border-r border-gray-200 z-10">
+                <!-- Added max-h constraint on mobile to prevent it from eating the whole screen when log opens -->
+                <div class="col-span-2 row-start-1 md:col-span-1 md:col-start-2 md:row-start-1 bg-white flex flex-col border-b md:border-b-0 md:border-r border-gray-200 z-10 max-h-[50vh] md:max-h-full overflow-hidden md:overflow-visible">
                     
                     <!-- Question Controls (Always Visible) -->
                     <div class="p-2 md:p-4 bg-gray-50 border-b border-gray-200 shrink-0">
@@ -250,7 +250,8 @@
                     <!-- Used min-h-0 to ensure flex-1 works inside overflow container -->
                     <div id="center-extended-content" class="hidden md:flex flex-col flex-1 min-h-0 overflow-hidden">
                         <!-- Event Log -->
-                        <div class="flex-1 overflow-y-auto p-2 md:p-4 bg-white min-h-0" id="event-log">
+                        <!-- Added max-h-48 for mobile scrolling -->
+                        <div class="flex-1 overflow-y-auto p-2 md:p-4 bg-white min-h-0 max-h-48 md:max-h-none" id="event-log">
                             <!-- Logs go here -->
                             <div class="text-center text-gray-400 text-sm mt-10">Quiz started.</div>
                         </div>
@@ -262,12 +263,13 @@
                                 <!-- Contests -->
                                 <div class="bg-white p-2 rounded shadow-sm text-xs flex flex-col justify-center">
                                     <div class="font-bold text-center mb-1 border-b border-gray-100 pb-1">Contests</div>
-                                    <div class="flex justify-between items-center px-1">
-                                        <div class="text-red-600 font-bold cursor-pointer hover:bg-red-50 p-1 rounded text-center" onclick="app.addContest('red')">
+                                    <!-- Changed to flex-col for better space management on small tablets -->
+                                    <div class="flex flex-col xl:flex-row justify-between items-center px-1 gap-1">
+                                        <div class="text-red-600 font-bold cursor-pointer hover:bg-red-50 p-1 rounded text-center w-full" onclick="app.addContest('red')">
                                             R: <span id="red-contests">0/0</span>
                                         </div>
-                                        <div class="text-gray-300">|</div>
-                                        <div class="text-yellow-600 font-bold cursor-pointer hover:bg-yellow-50 p-1 rounded text-center" onclick="app.addContest('yellow')">
+                                        <div class="text-gray-300 hidden xl:block">|</div>
+                                        <div class="text-yellow-600 font-bold cursor-pointer hover:bg-yellow-50 p-1 rounded text-center w-full" onclick="app.addContest('yellow')">
                                             Y: <span id="yellow-contests">0/0</span>
                                         </div>
                                     </div>
@@ -278,7 +280,7 @@
                                     </button>
                                 </div>
                             </div>
-                            <button onclick="app.resetQuiz()" class="w-full text-red-500 text-xs hover:underline text-center py-1">Reset Quiz</button>
+                            <button onclick="app.resetQuiz()" class="w-full text-red-500 text-xs hover:underline text-center py-1 font-bold">Reset Quiz</button>
                         </div>
                     </div>
                 </div>
@@ -393,16 +395,15 @@
                 <!-- Detailed Table -->
                 <h3 class="text-lg font-bold mb-4 border-b border-gray-300 pb-2">Question Detail</h3>
                 <div class="overflow-x-auto">
-                    <table class="w-full text-xs md:text-sm text-left text-gray-600">
+                    <table class="w-full text-xs md:text-sm text-left text-gray-600 border-collapse border border-gray-200">
                         <thead class="text-xs text-gray-700 uppercase bg-gray-100">
                             <tr>
-                                <th class="px-2 md:px-4 py-2">#</th>
-                                <th class="px-2 md:px-4 py-2">Val</th>
-                                <th class="px-2 md:px-4 py-2">Team</th>
-                                <th class="px-2 md:px-4 py-2">Quizzer</th>
-                                <th class="px-2 md:px-4 py-2">Result</th>
-                                <th class="px-2 md:px-4 py-2 text-center">Int?</th>
-                                <th class="px-2 md:px-4 py-2 text-right">Running Score</th>
+                                <th class="px-2 py-2 border border-gray-200 text-center w-8">#</th>
+                                <th class="px-2 py-2 border border-gray-200 text-center w-8">Val</th>
+                                <th class="px-4 py-2 border border-gray-200 text-center text-red-700 bg-red-50 w-1/3">Red Team</th>
+                                <th class="px-2 py-2 border border-gray-200 text-center w-10 font-black text-red-700">Red</th>
+                                <th class="px-4 py-2 border border-gray-200 text-center text-yellow-700 bg-yellow-50 w-1/3">Yellow Team</th>
+                                <th class="px-2 py-2 border border-gray-200 text-center w-10 font-black text-yellow-700">Yel</th>
                             </tr>
                         </thead>
                         <tbody id="summary-table-body">
@@ -1035,16 +1036,16 @@
                 // Apply Events
                 this.state.history.forEach(ev => {
                     const logItem = { ...ev, computedQ: null, computedVal: 0, isReboundAction: false };
+                    let addToView = true;
 
                     if (ev.type === 'bonus') {
                         if (ev.team) {
                             stats[ev.team] += ev.points;
-                            logItem.computedDesc = `${this.state.teams[ev.team].name} Starting Bonus`;
                         } else {
                             stats.red += ev.points;
                             stats.yellow += ev.points;
-                            logItem.computedDesc = "Global Starting Bonus";
                         }
+                        addToView = false; // Hide from logs/summary
                     } 
                     else if (ev.type === 'sub') {
                         ev.entering.forEach(id => stats.teams[ev.team].players[id].active = true);
@@ -1109,7 +1110,16 @@
                             pStats.correct++;
                             pStats.points += val;
                             stats[ev.team] += val;
-                            if (pStats.correct >= CONSTANTS.QUIZ_OUT) pStats.isQuizOut = true;
+                            
+                            // Check for Quiz Out Bonus
+                            if (pStats.correct === CONSTANTS.QUIZ_OUT) {
+                                pStats.isQuizOut = true;
+                                pStats.points += 10; // Bonus
+                                stats[ev.team] += 10; // Bonus
+                                logItem.quizOutBonus = true; // Mark for logs/summary
+                            } else if (pStats.correct > CONSTANTS.QUIZ_OUT) {
+                                pStats.isQuizOut = true;
+                            }
 
                             stats.questionNum++;
                             stats.reboundMode = false;
@@ -1138,7 +1148,7 @@
                         }
                     }
 
-                    stats.viewLog.push(logItem);
+                    if (addToView) stats.viewLog.push(logItem);
                 });
 
                 // End Game / Overtime Logic
@@ -1351,6 +1361,7 @@
                     if (ev.type === 'answer') {
                         const bg = ev.result === 'correct' ? 'bg-green-100 text-green-800' : (ev.result === 'error' ? 'bg-red-100 text-red-800' : 'bg-gray-200');
                         const pName = this.state.teams[ev.team].players.find(p => p.id === ev.playerId).name;
+                        const bonusText = ev.quizOutBonus ? '<span class="text-yellow-600 ml-1 font-bold text-[10px]">(QO +10)</span>' : '';
                         
                         content = `
                             <div class="flex w-full items-center">
@@ -1360,6 +1371,7 @@
                                     <span class="ml-1 px-1.5 rounded ${bg}">${ev.result.toUpperCase()}</span>
                                     ${ev.interrupted ? '<span class="text-orange-500 ml-1"><i class="fas fa-bolt"></i> Int</span>' : ''}
                                     ${ev.isReboundAction ? '<span class="text-purple-500 ml-1 font-bold">RR</span>' : ''}
+                                    ${bonusText}
                                 </div>
                                 <i class="fas fa-pencil-alt text-gray-300 group-hover:text-blue-500"></i>
                                 <button onclick="event.stopPropagation(); app.deleteEvent(${ev.id})" class="ml-2 text-gray-300 hover:text-red-500" title="Delete Event"><i class="fas fa-trash"></i></button>
@@ -1408,11 +1420,13 @@
                              </div>
                         `;
                     } else if (ev.type === 'bonus') {
-                        content = `<div class="w-full text-center text-blue-500 italic">${ev.computedDesc}</div>`;
+                        // Bonus not shown in logs
                     }
 
-                    el.innerHTML = content;
-                    logContainer.appendChild(el);
+                    if(content) {
+                        el.innerHTML = content;
+                        logContainer.appendChild(el);
+                    }
                 });
             },
 
@@ -1452,87 +1466,83 @@
 
                 let runningRed = 0;
                 let runningYellow = 0;
+
+                // Pre-calculate bonuses for running score
+                this.state.history.forEach(h => {
+                    if(h.type === 'bonus') {
+                        if(h.team === 'red') runningRed += h.points;
+                        else if(h.team === 'yellow') runningYellow += h.points;
+                        else { runningRed += h.points; runningYellow += h.points; }
+                    }
+                });
                 
                 // Use viewLog to render table
                 stats.viewLog.forEach(ev => {
-                    if (ev.type === 'bonus') {
-                        let bonusRed = 0;
-                        let bonusYellow = 0;
-                        if(ev.team) {
-                            if(ev.team === 'red') { bonusRed = ev.points; runningRed += 10; }
-                            if(ev.team === 'yellow') { bonusYellow = ev.points; runningYellow += 10; }
-                        } else {
-                            // legacy
-                             runningRed += 10; runningYellow += 10; bonusRed=10; bonusYellow=10;
-                        }
-
-                        const tr = document.createElement('tr');
-                        tr.className = "bg-blue-50 italic";
-                        tr.innerHTML = `<td colspan="6" class="px-4 py-2">${ev.computedDesc}</td><td class="px-4 py-2 text-right">R:${runningRed} Y:${runningYellow}</td>`;
-                        tbody.appendChild(tr);
-                        return;
-                    }
-
-                    // Prepare note HTML for table if note exists
+                    let rContent = '';
+                    let yContent = '';
+                    let rClass = '';
+                    let yClass = '';
                     const noteHtml = ev.note ? `<div class="text-[10px] text-gray-500 italic mt-0.5"><i class="fas fa-sticky-note mr-1"></i>${ev.note}</div>` : '';
 
-                    if (ev.type === 'team_foul') {
-                        if(ev.team === 'red') runningRed -= 5;
-                        else runningYellow -= 5;
-                        const tr = document.createElement('tr');
-                        tr.className = "bg-red-50 text-red-800";
-                        tr.innerHTML = `<td colspan="6" class="px-4 py-2 font-bold">${ev.computedDesc} ${noteHtml}</td><td class="px-4 py-2 text-right">R:${runningRed} Y:${runningYellow}</td>`;
-                        tbody.appendChild(tr);
-                        return;
+                    if (ev.type === 'bonus') {
+                        // Bonus rows hidden from table
+                    } 
+                    else if (ev.type === 'team_foul') {
+                        if(ev.team === 'red') { runningRed -= 5; rContent = `${ev.computedDesc} ${noteHtml}`; rClass = "text-red-700 bg-red-50 font-bold"; }
+                        else { runningYellow -= 5; yContent = `${ev.computedDesc} ${noteHtml}`; yClass = "text-red-700 bg-red-50 font-bold"; }
+                    }
+                    else if (ev.type === 'timeout') {
+                        if(ev.team === 'red') { rContent = ev.computedDesc + noteHtml; rClass="text-gray-500 italic"; }
+                        else { yContent = ev.computedDesc + noteHtml; yClass="text-gray-500 italic"; }
+                    }
+                    else if (ev.type === 'no_response' || ev.type === 'void') {
+                        const txt = ev.computedDesc || (ev.type === 'void' ? 'Question Cleared' : 'No Response');
+                        rContent = `<span class="text-gray-400 italic">${txt}</span>${noteHtml}`;
+                        yContent = `<span class="text-gray-400 italic">${txt}</span>${noteHtml}`;
+                    }
+                    else if (ev.type === 'answer') {
+                        const half = Math.ceil(ev.computedVal/2);
+                        let pts = 0;
+                        
+                        const pName = this.state.teams[ev.team].players.find(p => p.id === ev.playerId).name;
+                        const resText = `<span class="font-bold">${ev.result.toUpperCase()}</span>`;
+                        const flags = `${ev.interrupted ? ' (INT)' : ''}${ev.isReboundAction ? ' (RR)' : ''}`;
+                        const bonusFlag = ev.quizOutBonus ? " <span class='text-yellow-600 font-bold text-[10px]'>(QO +10)</span>" : "";
+
+                        if(ev.result === 'correct') pts = ev.computedVal;
+                        if(ev.result === 'error') pts = -half;
+                        if(ev.result === 'foul') pts = -5; 
+                        
+                        if (ev.quizOutBonus) pts += 10;
+
+                        const ptsDisplay = `(${pts > 0 ? '+' : ''}${pts})`;
+                        const desc = `${pName} ${ptsDisplay} ${resText}${flags}${bonusFlag}${noteHtml}`;
+
+                        if(ev.team === 'red') {
+                            runningRed += pts;
+                            rContent = desc;
+                            rClass = ev.result === 'correct' ? 'text-green-700 bg-green-50' : 'text-red-700 bg-red-50';
+                        } else {
+                            runningYellow += pts;
+                            yContent = desc;
+                            yClass = ev.result === 'correct' ? 'text-green-700 bg-green-50' : 'text-red-700 bg-red-50';
+                        }
                     }
 
-                    if (ev.type === 'no_response' || ev.type === 'void') {
+                    // Build Row
+                    if (rContent || yContent || ev.computedQ) {
                         const tr = document.createElement('tr');
-                        tr.className = "bg-gray-50 italic text-gray-500";
+                        tr.className = "border-b border-gray-200 hover:bg-gray-50";
                         tr.innerHTML = `
-                            <td class="px-4 py-2">${ev.computedQ}</td>
-                            <td colspan="5" class="px-4 py-2">
-                                ${ev.computedDesc || (ev.type === 'void' ? 'Question Cleared' : 'No Response')}
-                                ${noteHtml}
-                            </td>
-                            <td class="px-4 py-2 text-right">R:${runningRed} Y:${runningYellow}</td>
+                            <td class="px-2 py-2 border-r border-gray-200 text-center font-bold text-gray-500">${ev.computedQ || '-'}</td>
+                            <td class="px-2 py-2 border-r border-gray-200 text-center">${ev.computedVal || '-'}</td>
+                            <td class="px-4 py-2 border-r border-gray-200 text-right ${rClass}">${rContent}</td>
+                            <td class="px-2 py-2 border-r border-gray-200 text-center font-black text-red-700 bg-gray-50 text-base">${runningRed}</td>
+                            <td class="px-4 py-2 border-r border-gray-200 text-left ${yClass}">${yContent}</td>
+                            <td class="px-2 py-2 text-center font-black text-yellow-700 bg-gray-50 text-base">${runningYellow}</td>
                         `;
                         tbody.appendChild(tr);
-                        return;
                     }
-
-                    if (ev.type !== 'answer') return;
-
-                    const half = Math.ceil(ev.computedVal/2);
-                    let pts = 0;
-                    if(ev.result === 'correct') pts = ev.computedVal;
-                    if(ev.result === 'error') pts = -half;
-                    if(ev.result === 'foul') pts = -5; 
-
-                    if(ev.team === 'red') runningRed += pts;
-                    else runningYellow += pts;
-
-                    const pName = this.state.teams[ev.team].players.find(p => p.id === ev.playerId).name;
-                    
-                    const tr = document.createElement('tr');
-                    tr.className = "border-b hover:bg-gray-50";
-                    tr.innerHTML = `
-                        <td class="px-4 py-2 font-bold text-gray-500">${ev.computedQ}</td>
-                        <td class="px-4 py-2">${ev.computedVal}</td>
-                        <td class="px-4 py-2 font-semibold ${ev.team === 'red' ? 'text-red-700' : 'text-yellow-700'}">${this.state.teams[ev.team].name}</td>
-                        <td class="px-4 py-2">
-                            ${pName}
-                            ${noteHtml}
-                        </td>
-                        <td class="px-4 py-2">
-                            <span class="${ev.result === 'correct' ? 'text-green-600 font-bold' : (ev.result === 'error' ? 'text-red-600' : 'text-orange-500')}">
-                                ${ev.result.toUpperCase()} ${ev.isReboundAction ? '(RR)' : ''}
-                            </span>
-                        </td>
-                        <td class="px-4 py-2 text-center text-orange-500">${ev.interrupted ? '<i class="fas fa-bolt"></i>' : '-'}</td>
-                        <td class="px-4 py-2 text-right font-mono font-bold">R:${runningRed} &nbsp; Y:${runningYellow}</td>
-                    `;
-                    tbody.appendChild(tr);
                 });
             }
         };
