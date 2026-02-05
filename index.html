@@ -110,54 +110,56 @@
     </style>
 </head>
 <!-- Use h-[100dvh] for mobile browsers to account for address bars correctly -->
-<body class="bg-gray-100 text-gray-800 h-[100dvh] w-screen overflow-hidden flex flex-col">
+<body class="bg-gray-100 text-gray-800 h-[100dvh] w-full overflow-hidden flex flex-col">
 
     <!-- APP CONTAINER -->
     <div id="app" class="flex flex-col h-full w-full">
 
         <!-- ================= VIEW: SETUP ================= -->
-        <div id="setup-view" class="flex-1 flex items-center justify-center p-4 overflow-y-auto">
-            <div class="bg-white p-4 md:p-8 rounded-xl shadow-2xl w-full max-w-4xl border-t-8 border-blue-600">
-                <h1 class="text-2xl md:text-3xl font-bold text-center mb-6 text-gray-700">
-                    Quiz20 <span class="text-lg md:text-xl font-normal text-gray-500 block mt-1">(SBQ Scorekeeping)</span>
-                </h1>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
-                    <!-- Red Team Setup -->
-                    <div class="bg-red-50 p-4 rounded-lg border border-red-200">
-                        <h2 class="text-xl font-bold text-red-700 mb-4"><i class="fas fa-flag text-red-500 mr-2"></i>Red Team</h2>
-                        <input type="text" id="setup-red-name" value="Red Team" class="w-full p-2 mb-4 border rounded font-semibold text-red-900 placeholder-red-300 focus:outline-none focus:ring-2 focus:ring-red-500">
-                        <div id="red-roster-inputs" class="space-y-2">
-                            <!-- JS Generates Inputs -->
+        <div id="setup-view" class="flex-1 overflow-y-auto bg-gray-100">
+            <div class="min-h-full flex items-center justify-center p-4">
+                <div class="bg-white p-4 md:p-8 rounded-xl shadow-2xl w-full max-w-4xl border-t-8 border-blue-600">
+                    <h1 class="text-2xl md:text-3xl font-bold text-center mb-6 text-gray-700">
+                        Quiz20 <span class="text-lg md:text-xl font-normal text-gray-500 block mt-1">(SBQ Scorekeeping)</span>
+                    </h1>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
+                        <!-- Red Team Setup -->
+                        <div class="bg-red-50 p-4 rounded-lg border border-red-200">
+                            <h2 class="text-xl font-bold text-red-700 mb-4"><i class="fas fa-flag text-red-500 mr-2"></i>Red Team</h2>
+                            <input type="text" id="setup-red-name" value="Red Team" class="w-full p-2 mb-4 border rounded font-semibold text-red-900 placeholder-red-300 focus:outline-none focus:ring-2 focus:ring-red-500">
+                            <div id="red-roster-inputs" class="space-y-2">
+                                <!-- JS Generates Inputs -->
+                            </div>
+                        </div>
+
+                        <!-- Yellow Team Setup -->
+                        <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                            <h2 class="text-xl font-bold text-yellow-700 mb-4"><i class="fas fa-flag text-yellow-500 mr-2"></i>Yellow Team</h2>
+                            <input type="text" id="setup-yellow-name" value="Yellow Team" class="w-full p-2 mb-4 border rounded font-semibold text-yellow-900 placeholder-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                            <div id="yellow-roster-inputs" class="space-y-2">
+                                <!-- JS Generates Inputs -->
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Yellow Team Setup -->
-                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                        <h2 class="text-xl font-bold text-yellow-700 mb-4"><i class="fas fa-flag text-yellow-500 mr-2"></i>Yellow Team</h2>
-                        <input type="text" id="setup-yellow-name" value="Yellow Team" class="w-full p-2 mb-4 border rounded font-semibold text-yellow-900 placeholder-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-500">
-                        <div id="yellow-roster-inputs" class="space-y-2">
-                            <!-- JS Generates Inputs -->
+                    <div class="mt-6 flex flex-col md:flex-row items-center justify-between bg-blue-50 p-4 rounded-lg gap-4">
+                        <div class="flex flex-col space-y-2 w-full md:w-auto">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" id="bonus-red" checked class="w-5 h-5 text-red-600 rounded focus:ring-red-500">
+                                <span class="ml-3 text-sm font-medium text-gray-900">Red Team Bonus (+10)</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" id="bonus-yellow" checked class="w-5 h-5 text-yellow-600 rounded focus:ring-yellow-500">
+                                <span class="ml-3 text-sm font-medium text-gray-900">Yellow Team Bonus (+10)</span>
+                            </label>
                         </div>
+                        <button onclick="app.startQuiz()" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow transition transform hover:scale-105">
+                            Start Quiz <i class="fas fa-arrow-right ml-2"></i>
+                        </button>
                     </div>
+                    <p class="text-xs text-gray-500 mt-4 text-center">Select exactly 3 starters per team using the checkboxes.</p>
                 </div>
-
-                <div class="mt-6 flex flex-col md:flex-row items-center justify-between bg-blue-50 p-4 rounded-lg gap-4">
-                    <div class="flex flex-col space-y-2 w-full md:w-auto">
-                        <label class="flex items-center cursor-pointer">
-                            <input type="checkbox" id="bonus-red" checked class="w-5 h-5 text-red-600 rounded focus:ring-red-500">
-                            <span class="ml-3 text-sm font-medium text-gray-900">Red Team Bonus (+10)</span>
-                        </label>
-                        <label class="flex items-center cursor-pointer">
-                            <input type="checkbox" id="bonus-yellow" checked class="w-5 h-5 text-yellow-600 rounded focus:ring-yellow-500">
-                            <span class="ml-3 text-sm font-medium text-gray-900">Yellow Team Bonus (+10)</span>
-                        </label>
-                    </div>
-                    <button onclick="app.startQuiz()" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow transition transform hover:scale-105">
-                        Start Quiz <i class="fas fa-arrow-right ml-2"></i>
-                    </button>
-                </div>
-                <p class="text-xs text-gray-500 mt-4 text-center">Select exactly 3 starters per team using the checkboxes.</p>
             </div>
         </div>
 
